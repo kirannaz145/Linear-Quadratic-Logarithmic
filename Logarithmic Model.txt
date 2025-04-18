@@ -1,0 +1,64 @@
+Logarithmic Model: 
+
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LinearRegression
+from sklearn.metrics import r2_score, mean_squared_error
+import numpy as np
+
+# Load the Excel file
+file_path = '/content/RMSE.xlsx'  # Update with the actual file path
+df = pd.read_excel(file_path)
+
+# Define the independent variables (Extended Energies) and dependent variables (Drug Properties)
+extended_energies = df.iloc[:, :6]  # First 6 columns
+drug_properties = df.iloc[:, 6:]   # Next 8 columns
+
+# Initialize a list to store results
+results = []
+
+# Loop over each extended energy and each drug property
+for energy_col in extended_energies.columns:
+    for property_col in drug_properties.columns:
+        # Define X and y for the model
+        X = extended_energies[[energy_col]]  # Single feature (current extended energy)
+        y = drug_properties[property_col]   # Current drug property
+
+        # Ensure no negative or zero values in X (required for ln transformation)
+        if (X <= 0).any().values:
+            print(f"Skipping {energy_col} for logarithmic transformation due to non-positive values.")
+            continue
+
+        # Apply the natural logarithm transformation to X
+        X_log = np.log(X)
+
+        # Split data into training and testing sets
+        X_train, X_test, y_train, y_test = train_test_split(X_log, y, test_size=0.2, random_state=42)
+
+        # Create and train the linear regression model
+        model = LinearRegression()
+        model.fit(X_train, y_train)
+
+        # Predict on the test set
+        y_pred = model.predict(X_test)
+
+        # Calculate R² and RMSE
+        r2 = r2_score(y_test, y_pred)
+        rmse = np.sqrt(mean_squared_error(y_test, y_pred))
+
+        # Append results
+        results.append({
+            'Extended Energy': energy_col,
+            'Drug Property': property_col,
+            'R²': round(r2, 4),
+            'RMSE': round(rmse, 4)
+        })
+
+# Convert results into a DataFrame for better visualization
+results_df = pd.DataFrame(results)
+
+# Save results to a CSV file (optional)
+results_df.to_csv('logarithmic_model_results.csv', index=False)
+
+# Display the results
+print(results_df)
