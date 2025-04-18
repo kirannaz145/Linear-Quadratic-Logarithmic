@@ -1,0 +1,30 @@
+import pandas as pd
+
+# Load datasets
+rmse_df = pd.read_excel("/content/RMSE 3 MODELS.xlsx")
+r_value_df = pd.read_excel("/content/R Value.xlsx")
+
+# Check if drug properties match
+if not all(rmse_df.iloc[:, 0] == r_value_df.iloc[:, 0]):
+    raise ValueError("Drug properties do not match.")
+# Extract data
+properties = rmse_df.iloc[:, 0]
+models = ["Linear", "Quadratic", "Logarithmic"]
+rmse_data = [rmse_df.iloc[:, 1:7], rmse_df.iloc[:, 7:13], rmse_df.iloc[:, 13:19]]
+r_data = [r_value_df.iloc[:, 1:7], r_value_df.iloc[:, 7:13], r_value_df.iloc[:, 13:19]]
+
+# Determine best model for each property
+best_models = [
+    [properties[i],
+     models[max(range(3), key=lambda x: r_data[x].iloc[i].mean())] if max(range(3), key=lambda x:
+    r_data[x].iloc[i].mean()) == min(range(3), key=lambda x: rmse_data[x].iloc[i].mean())
+     else models[max(range(3), key=lambda x: r_data[x].iloc[i].mean())],
+     r_data[max(range(3), key=lambda x: r_data[x].iloc[i].mean())].iloc[i].mean(),
+     rmse_data[max(range(3), key=lambda x: r_data[x].iloc[i].mean())].iloc[i].mean()]
+    for i in range(len(properties))
+]
+
+# Create and save summary
+summary_df = pd.DataFrame(best_models, columns=["Property", "Best Model Based on R", "Best R Value", "Best RMSE"])
+summary_df.to_excel("/content/Best_Model_Summary.xlsx", index=False)
+print(summary_df)
